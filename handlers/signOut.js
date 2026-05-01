@@ -5,8 +5,6 @@ const {
 
 const client = new CognitoIdentityProviderClient({ region: "ap-southeast-2" });
 
-const CLIENT_ID = process.env.CLIENT_ID;
-
 exports.signOut = async (event) => {
   const { accessToken } = JSON.parse(event.body);
 
