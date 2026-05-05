@@ -9,10 +9,13 @@ provider:
   region: ap-southeast-2
   environment:
     CLIENT_ID: ${ssm:/CLIENT_ID}
-  # Uncomment to easily set up a custom domain. Read the docs for more details:
-  # https://www.serverless.com/framework/docs/providers/aws/guide/domains
 
-  # domain: api.example.com
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:PutItem"
+      Resource:
+        - "arn:aws:dynamodb:ap-southeast-2:032844083309:table/Users"
 
 resources:
   Resources:

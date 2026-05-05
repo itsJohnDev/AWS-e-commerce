@@ -2,7 +2,7 @@ const {
   CognitoIdentityProviderClient,
   SignUpCommand,
 } = require("@aws-sdk/client-cognito-identity-provider");
-
+const UserModel = require("../models/userModel");
 const client = new CognitoIdentityProviderClient({ region: "ap-southeast-2" });
 
 const CLIENT_ID = process.env.CLIENT_ID;
@@ -24,6 +24,9 @@ exports.signUp = async (event) => {
     const command = new SignUpCommand(params);
 
     await client.send(command);
+
+    const newUser = new UserModel(email, fullName);
+    await newUser.save();
 
     return {
       statusCode: 200,
