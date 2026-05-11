@@ -1,0 +1,78 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: itsjohndevapps
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: categoryService
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+  region: ap-southeast-2
+  environment:
+    BUCKET_NAME: category-image-commerce
+    DYNAMO_TABLE: Categories
+    SNS_TOPIC_ARN: arn:aws:sns:ap-southeast-2:032844083309:CategoryCleanupTopic
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+      Resource: arn:aws:s3:::category-image-commerce/*
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:Scan
+        - dynamodb:DeleteItem
+      Resource: arn:aws:dynamodb:ap-southeast-2:032844083309:table/Categories
+    - Effect: Allow
+      Action:
+        - sns:Publish
+      Resource: arn:aws:sns:ap-southeast-2:032844083309:CategoryCleanupTopic
+  # Uncomment to easily set up a custom domain. Read the docs for more details:
+  # https://www.serverless.com/framework/docs/providers/aws/guide/domains
+  # domain: api.example.com
+resources:
+  Resources:
+    CategoryImageBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: category-image-commerce
+    CategoryTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: Categories
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: fileName
+            AttributeType: S
+        KeySchema:
+          - AttributeName: fileName
+            KeyType: HASH
+    CategoryCleanupTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: CategoryCleanupTopic
+    CategoryCleanupSubscription:
+      Type: AWS::SNS::Subscription
+      Properties:
+        TopicArn: arn:aws:sns:ap-southeast-2:032844083309:CategoryCleanupTopic
+        Protocol: email
+        Endpoint: johncarloaguilar.pinlac@gmail.com
+functions:
+  getUploadUrl:
+    handler: handlers/getUploadUrl.getUploadUrl
+    events:
+      - httpApi:
+          path: /upload-url
+          method: post
+
+  updateCategoryImage:
+    handler: handlers/updateCategoryImage.updateCategoryImage
+    events:
+      - s3:
+          bucket: category-image-commerce
+          event: s3:ObjectCreated:Put
+          existing: true
+  cleanupCategories:
+    handler: handlers/cleanupCategories.cleanupCategories
+    events:
+      - schedule: rate(15 minutes)
