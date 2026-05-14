@@ -5,15 +5,41 @@ service: productService
 
 provider:
   name: aws
-  runtime: nodejs20.x
+  runtime: nodejs22.x
+  region: ap-southeast-2
+  environment:
+    BUCKET_NAME: product-image-commerce
+    DYNAMO_TABLE: Products
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:PutItem"
+      Resource: arn:aws:dynamodb:ap-southeast-2:032844083309:table/Products
+
   # Uncomment to easily set up a custom domain. Read the docs for more details:
   # https://www.serverless.com/framework/docs/providers/aws/guide/domains
   # domain: api.example.com
-
+resources:
+  Resources:
+    ProductImageBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: product-image-commerce
+    ProductTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: Products
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
 functions:
-  hello:
-    handler: handler.hello
+  getUploadUrl:
+    handler: handlers/getUploadUrl.getUploadUrl
     events:
       - httpApi:
-          path: /
-          method: get
+          path: /upload-url
+          method: post
