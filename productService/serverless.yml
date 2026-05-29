@@ -11,9 +11,15 @@ provider:
     BUCKET_NAME: product-image-commerce
     DYNAMO_TABLE: Products
   iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+      Resource: arn:aws:s3:::product-image-commerce/*
     - Effect: "Allow"
       Action:
         - "dynamodb:PutItem"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:Scan"
       Resource: arn:aws:dynamodb:ap-southeast-2:032844083309:table/Products
 
   # Uncomment to easily set up a custom domain. Read the docs for more details:
