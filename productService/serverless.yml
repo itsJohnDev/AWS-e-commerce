@@ -7,9 +7,17 @@ provider:
   name: aws
   runtime: nodejs22.x
   region: ap-southeast-2
+  httpApi:
+    authorizers:
+      myCognitoAuth:
+        identitySource: $request.header.Authorization
+        issuerUrl: https://cognito-idp.ap-southeast-2.amazonaws.com/ap-southeast-2_qvIf5SjpX
+        audience:
+          - 14k0ipvkhskvm5bdvsa65kklm9
   environment:
     BUCKET_NAME: product-image-commerce
     DYNAMO_TABLE: Products
+    SNS_TOPIC_ARN: arn:aws:sns:ap-southeast-2:032844083309:ProductCleanupTopic
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -20,7 +28,12 @@ provider:
         - "dynamodb:PutItem"
         - "dynamodb:UpdateItem"
         - "dynamodb:Scan"
+        - "dynamodb:DeleteItem"
       Resource: arn:aws:dynamodb:ap-southeast-2:032844083309:table/Products
+    - Effect: Allow
+      Action:
+        - sns:Publish
+      Resource: arn:aws:sns:ap-southeast-2:032844083309:ProductCleanupTopic
 
   # Uncomment to easily set up a custom domain. Read the docs for more details:
   # https://www.serverless.com/framework/docs/providers/aws/guide/domains
@@ -42,6 +55,17 @@ resources:
         KeySchema:
           - AttributeName: id
             KeyType: HASH
+    ProductCleanupTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ProductCleanupTopic
+    ProductCleanupSubscription:
+      Type: AWS::SNS::Subscription
+      Properties:
+        TopicArn: arn:aws:sns:ap-southeast-2:032844083309:ProductCleanupTopic
+        Protocol: email
+        Endpoint: johncarloaguilar.pinlac@gmail.com
+
 functions:
   getUploadUrl:
     handler: handlers/getUploadUrl.getUploadUrl
@@ -49,3 +73,16 @@ functions:
       - httpApi:
           path: /upload-url
           method: post
+          authorizer:
+            name: myCognitoAuth
+  updateProductImage:
+    handler: handlers/updateProductImage.updateProductImage
+    events:
+      - s3:
+          bucket: product-image-commerce
+          event: s3:ObjectCreated:Put
+          existing: true
+  cleanupProducts:
+    handler: handlers/cleanupProducts.cleanupProducts
+    events:
+      - schedule: rate(15 minutes)

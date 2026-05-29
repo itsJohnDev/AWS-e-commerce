@@ -52,12 +52,12 @@ exports.updateProductImage = async (event) => {
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: "image url updated successfully" }),
+      body: JSON.stringify({ msg: "image url updated successfully" }),
     };
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: error.message }),
+      body: JSON.stringify({ msg: error.message }),
     };
   }
 };
