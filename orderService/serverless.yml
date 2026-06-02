@@ -9,12 +9,17 @@ provider:
   region: ap-southeast-2
   environment:
     ORDERS_TABLE: Orders
+    SQS_QUEUE_URL: https://sqs.ap-southeast-2.amazonaws.com/032844083309/OrderQueue
   iamRoleStatements:
     - Effect: "Allow"
       Action:
         - "dynamodb:PutItem"
+        - "sqs:SendMessage"
+        - "sqs:ReceiveMessage"
+        - "sqs:DeleteMessage"
       Resource:
         - Fn::GetAtt: [OrdersTable, Arn]
+        - Fn::GetAtt: [OrdersQueue, Arn]
   # Uncomment to easily set up a custom domain. Read the docs for more details:
   # https://www.serverless.com/framework/docs/providers/aws/guide/domains
   # domain: api.example.com
@@ -32,6 +37,10 @@ resources:
         KeySchema:
           - AttributeName: id
             KeyType: HASH
+    OrdersQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: OrderQueue
 
 functions:
   placeOrder:
@@ -40,3 +49,9 @@ functions:
       - httpApi:
           path: /place-order
           method: post
+  processOrder:
+    handler: handlers/processOrder.processOrder
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt: [OrdersQueue, Arn]
